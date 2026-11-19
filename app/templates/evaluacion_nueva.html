@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% block title %}Nueva evaluación{% endblock %}
+{% block content %}
+<a href="{{ url_for('pages.evaluaciones') }}" class="inline-flex items-center gap-1 text-on-surface-variant hover:text-primary font-label-md text-label-md mb-space-md"><span class="material-symbols-outlined text-[18px]">arrow_back</span> Evaluaciones</a>
+<div class="mb-space-lg">
+  <h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">Nueva evaluación</h1>
+  <p class="font-body-lg text-body-lg text-on-surface-variant mt-1">Define el instrumento, su peso en el período y las secciones donde se aplicará.</p>
+</div>
+
+{% if not cargas %}
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-xl text-center font-body-md text-body-md text-on-surface-variant">No tienes áreas asignadas en este año lectivo.</div>
+{% else %}
+<form id="form-eval" class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg" novalidate>
+  <div class="lg:col-span-8 space-y-space-lg">
+    <section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg space-y-space-md">
+      <h2 class="font-headline-md text-headline-md text-primary">Datos de la evaluación</h2>
+      <label class="block"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Nombre</span>
+        <input name="nombre" required maxlength="150" placeholder="Ej.: Prueba escrita parcial" class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2.5 font-body-md text-body-md outline-none focus:ring-2 focus:ring-primary-container"/></label>
+      <div>
+        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tipo de instrumento</span>
+        <div class="mt-1 grid grid-cols-2 md:grid-cols-4 gap-2">
+          {% for k, t in tipos.items() %}
+          <label class="cursor-pointer"><input type="radio" name="tipo" value="{{ k }}" data-peso="{{ t.peso_sugerido }}" class="peer sr-only" {% if loop.first %}checked{% endif %}/>
+            <span class="flex flex-col items-center gap-1 rounded-xl bg-surface-container-low px-3 py-3 text-on-surface-variant peer-checked:bg-primary-container peer-checked:text-on-primary peer-focus-visible:ring-2 peer-focus-visible:ring-primary transition-colors">
+              <span class="material-symbols-outlined text-[24px]">{{ t.icono }}</span><span class="font-label-md text-label-md text-center">{{ t.label }}</span></span></label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+        <label class="block"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Competencia fundamental</span>
+          <select name="competencia" class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2.5 font-body-md text-body-md outline-none focus:ring-2 focus:ring-primary-container">
+            <option value="">— Sin especificar —</option>{% for c in competencias %}<option>{{ c }}</option>{% endfor %}</select></label>
+        <label class="block"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Fecha de aplicación</span>
+          <input type="date" name="fecha" class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2.5 font-body-md text-body-md outline-none focus:ring-2 focus:ring-primary-container"/></label>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+        <label class="block"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Puntaje máximo</span>
+          <input type="number" name="max_puntaje" value="100" min="1" max="1000" step="any" required class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2.5 font-numeric-table text-numeric-table outline-none focus:ring-2 focus:ring-primary-container"/></label>
+        <label class="block"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Peso en el período (%)</span>
+          <input type="number" name="peso" id="peso" value="{{ (tipos.values()|first).peso_sugerido }}" min="1" max="100" step="any" required class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2.5 font-numeric-table text-numeric-table outline-none focus:ring-2 focus:ring-primary-container"/></label>
+      </div>
+      <label class="block"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Indicadores de logro (opcional)</span>
+        <textarea name="indicadores" rows="3" maxlength="2000" class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2 font-body-md text-body-md outline-none focus:ring-2 focus:ring-primary-container"></textarea></label>
+    </section>
+  </div>
+
+  <div class="lg:col-span-4 space-y-space-lg">
+    <section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+      <h2 class="font-headline-md text-headline-md text-primary mb-space-sm">Período</h2>
+      <select name="periodo_id" id="periodo" class="w-full rounded-lg bg-surface-container-low px-3 py-2.5 font-body-md text-body-md outline-none focus:ring-2 focus:ring-primary-container">
+        {% for per in ctx.periodos if per.estado != 'cerrado' %}<option value="{{ per.id }}" {% if ctx.periodo and per.id == ctx.periodo.id %}selected{% endif %}>{{ per.nombre }}</option>{% endfor %}
+      </select>
+    </section>
+    <section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+      <h2 class="font-headline-md text-headline-md text-primary mb-1">Aplicar en</h2>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mb-space-sm">Marca las áreas y secciones. Se crea una evaluación por cada una.</p>
+      <div class="space-y-1 max-h-72 overflow-y-auto">
+        {% for c in cargas %}
+        <label class="flex items-center justify-between gap-2 rounded-lg px-2 py-2 hover:bg-surface-container-low cursor-pointer">
+          <span class="flex items-center gap-2"><input type="checkbox" class="carga w-4 h-4 accent-[#3178b9]" value="{{ c.id }}" {% if c.id == preseleccion %}checked{% endif %}/><span class="font-label-md text-label-md">{{ c.area }} · {{ c.seccion }}</span></span>
+          <span class="saldo font-label-sm text-label-sm text-on-surface-variant" data-carga="{{ c.id }}"></span>
+        </label>
+        {% endfor %}
+      </div>
+      <p id="aviso-peso" class="mt-space-sm font-label-sm text-label-sm text-on-surface-variant" aria-live="polite"></p>
+    </section>
+    <button type="submit" id="btn-crear" class="w-full rounded-lg bg-primary-container text-on-primary font-label-md text-label-md py-3 hover:bg-primary transition-colors">Crear evaluación</button>
+  </div>
+</form>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if cargas %}
+<script>
+(function () {
+  var form = document.getElementById('form-eval');
+  var peso = document.getElementById('peso'), periodo = document.getElementById('periodo');
+  var aviso = document.getElementById('aviso-peso');
+  var disponible = {};   // carga_id -> % disponible
+
+  form.querySelectorAll('input[name=tipo]').forEach(function (r) {
+    r.addEventListener('change', function () { peso.value = r.dataset.peso; revisar(); });
+  });
+
+  function cargasMarcadas() {
+    return Array.prototype.filter.call(form.querySelectorAll('.carga'), function (c) { return c.checked; })
+      .map(function (c) { return parseInt(c.value, 10); });
+  }
+  function cargarSaldos() {
+    disponible = {};
+    var pend = [];
+    form.querySelectorAll('.saldo').forEach(function (el) {
+      el.textContent = '';
+      var id = el.dataset.carga;
+      pend.push(App.api('GET', '/api/cargas/' + id + '/periodos/' + periodo.value + '/balance').then(function (b) {
+        disponible[id] = b.disponible;
+        el.textContent = 'libre ' + (Math.round(b.disponible * 10) / 10) + '%';
+      }).catch(function () { el.textContent = ''; }));
+    });
+    return Promise.all(pend).then(revisar);
+  }
+  function revisar() {
+    var p = parseFloat(peso.value), malas = [];
+    cargasMarcadas().forEach(function (id) { if (disponible[id] !== undefined && p > disponible[id] + 1e-9) malas.push(id); });
+    form.querySelectorAll('.saldo').forEach(function (el) {
+      el.classList.toggle('text-error', malas.indexOf(parseInt(el.dataset.carga, 10)) >= 0);
+    });
+    aviso.textContent = malas.length ? 'El peso supera el porcentaje libre en ' + malas.length + ' sección(es) marcada(s).' : '';
+    aviso.classList.toggle('text-error', malas.length > 0);
+    return malas.length === 0;
+  }
+  peso.addEventListener('input', revisar);
+  periodo.addEventListener('change', cargarSaldos);
+  form.querySelectorAll('.carga').forEach(function (c) { c.addEventListener('change', revisar); });
+  cargarSaldos();
+
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var ids = cargasMarcadas();
+    if (!form.nombre.value.trim()) { App.toast('Escribe el nombre de la evaluación.', 'error'); form.nombre.focus(); return; }
+    if (!ids.length) { App.toast('Marca al menos un área y sección.', 'error'); return; }
+    if (!revisar()) { App.toast('El peso supera el porcentaje libre de alguna sección.', 'error'); return; }
+    var cuerpo = {
+      carga_ids: ids, periodo_id: parseInt(periodo.value, 10), nombre: form.nombre.value,
+      tipo: form.querySelector('input[name=tipo]:checked').value, competencia: form.competencia.value,
+      fecha: form.fecha.value, max_puntaje: parseFloat(form.max_puntaje.value), peso: parseFloat(peso.value),
+      indicadores: form.indicadores.value
+    };
+    var btn = document.getElementById('btn-crear'); btn.disabled = true;
+    App.api('POST', '/api/evaluaciones', cuerpo).then(function () {
+      location.href = '/registro?carga=' + ids[0];
+    }).catch(function (e) { App.toast(e.message, 'error'); btn.disabled = false; });
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

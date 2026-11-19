@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}{{ p.insc.nombre }}{% endblock %}
+{% set tono = {'A': 'bg-secondary-fixed text-on-secondary-fixed', 'B': 'bg-primary-fixed text-on-primary-fixed',
+  'C': 'bg-surface-container text-on-surface', 'D': 'bg-error-container text-on-error-container'} %}
+{% set tipo_icono = {'dificultad': 'report_problem', 'estrategia_recuperacion': 'healing', 'fortaleza': 'workspace_premium', 'compromiso_padres': 'family_restroom'} %}
+{% set tipo_color = {'dificultad': 'bg-error-container text-on-error-container', 'estrategia_recuperacion': 'bg-primary-fixed text-on-primary-fixed',
+  'fortaleza': 'bg-secondary-fixed text-on-secondary-fixed', 'compromiso_padres': 'bg-tertiary-fixed text-on-tertiary-fixed'} %}
+{% block content %}
+<a href="{{ url_for('pages.estudiantes') }}" class="inline-flex items-center gap-1 text-on-surface-variant hover:text-primary font-label-md text-label-md mb-space-md"><span class="material-symbols-outlined text-[18px]">arrow_back</span> Estudiantes</a>
+
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-lg flex flex-col lg:flex-row lg:items-center justify-between gap-space-lg">
+  <div class="flex items-center gap-space-md">
+    <div class="w-20 h-20 rounded-full bg-primary-container text-on-primary font-bold flex items-center justify-center text-[28px]">{{ p.insc.iniciales }}</div>
+    <div>
+      <h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">{{ p.insc.nombre }}</h1>
+      <div class="flex flex-wrap items-center gap-2 mt-1 font-label-md text-label-md text-on-surface-variant">
+        <span class="px-2 py-0.5 rounded bg-surface-container text-primary font-semibold">{{ p.insc.grado_nombre }} {{ p.insc.letra }}</span>
+        <span>Matrícula <strong class="text-on-surface">{{ p.insc.matricula }}</strong></span>
+        {% if p.insc.rne %}<span>RNE <strong class="text-on-surface">{{ p.insc.rne }}</strong></span>{% endif %}
+        <span>{{ p.insc.condicion }}</span>
+      </div>
+      <div class="mt-1 font-label-sm text-label-sm text-on-surface-variant">
+        {% if p.centro.nombre %}{{ p.centro.nombre }}{% if p.centro.regional %} · {{ p.centro.regional }}{% endif %}{% if p.centro.distrito %} · {{ p.centro.distrito }}{% endif %}{% endif %}
+        {% if p.tutor %} · Tutor/a: {{ p.tutor }}{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="grid grid-cols-3 gap-space-md text-center">
+    <div class="px-4"><div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Promedio general</div><div class="font-headline-xl text-headline-xl font-bold {{ 'text-error' if p.kpi.literal == 'D' else 'text-primary' }}">{{ p.kpi.promedio|nota }}</div>{% if p.kpi.literal %}<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold {{ tono[p.kpi.literal] }}">Literal {{ p.kpi.literal }}</span>{% endif %}</div>
+    <div class="px-4"><div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Áreas aprobadas</div><div class="font-headline-xl text-headline-xl font-bold text-primary">{{ p.kpi.aprobadas }}<span class="text-headline-md text-on-surface-variant">/{{ p.kpi.evaluadas }}</span></div><span class="font-label-sm text-label-sm text-on-surface-variant">{{ p.kpi.aprobadas_pct|pct }}{{ '%' if p.kpi.aprobadas_pct is not none }}</span></div>
+    <div class="px-4"><div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Estado</div><div class="font-headline-sm text-headline-sm font-bold mt-2 {{ 'text-error' if p.estado_general.alerta else 'text-primary' }}">{{ p.estado_general.titulo }}</div><span class="font-label-sm text-label-sm text-on-surface-variant">{{ p.estado_general.detalle }}</span></div>
+  </div>
+</div>
+
+<div class="rounded-xl p-space-lg mb-space-lg flex items-start gap-3 {{ 'bg-error-container text-on-error-container' if p.estado_general.alerta else 'bg-surface-container-low text-on-surface' }}">
+  <span class="material-symbols-outlined text-[24px]">{{ 'warning' if p.estado_general.alerta else 'verified' }}</span>
+  <div><h2 class="font-headline-sm text-headline-sm">{{ p.diagnostico.titulo }}</h2><p class="font-body-md text-body-md mt-1">{{ p.diagnostico.texto }}</p></div>
+</div>
+
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden mb-space-lg">
+  <div class="p-space-lg bg-surface-container-low"><h2 class="font-headline-md text-headline-md text-primary tracking-tight">Histórico académico {{ p.anio.nombre if p.anio }}</h2><p class="font-body-sm text-body-sm text-on-surface-variant">Promedio por área y período · mínimo aprobatorio 70</p></div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <thead><tr class="bg-surface-container text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+        <th class="px-space-lg py-space-sm">Área curricular</th>
+        {% for per in p.periodos %}<th class="px-space-md py-space-sm text-center">P{{ per.numero }}</th>{% endfor %}
+        <th class="px-space-md py-space-sm text-center">Promedio</th><th class="px-space-md py-space-sm text-center">Literal</th><th class="px-space-md py-space-sm">Estado</th>
+      </tr></thead>
+      <tbody class="divide-y divide-surface-container font-body-sm text-body-sm">
+        {% for f in p.filas %}
+        <tr class="hover:bg-surface-container-low transition-colors">
+          <td class="px-space-lg py-space-md"><span class="inline-flex items-center gap-2 font-medium text-on-surface"><span class="material-symbols-outlined text-[18px] text-primary">{{ f.icono }}</span>{{ f.area }}</span></td>
+          {% for per in p.periodos %}{% set v = f.periodos[per.id] %}<td class="px-space-md py-space-md text-center font-numeric-table text-numeric-table {{ 'text-error font-bold' if v is not none and v < 70 }}">{{ v|nota }}</td>{% endfor %}
+          <td class="px-space-md py-space-md text-center font-numeric-table text-numeric-table font-bold text-primary">{{ f.promedio|nota }}</td>
+          <td class="px-space-md py-space-md text-center">{% if f.literal %}<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold {{ tono[f.literal] }}">{{ f.literal }}</span>{% else %}—{% endif %}</td>
+          <td class="px-space-md py-space-md text-on-surface-variant">{{ f.estado }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if p.periodo %}
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-space-md mb-space-lg">
+  {% for f in p.filas if f.desglose %}
+  <div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+    <h3 class="font-headline-sm text-headline-sm text-primary mb-1">{{ f.area_corta }}</h3>
+    <p class="font-label-sm text-label-sm text-on-surface-variant mb-3">Desglose · {{ p.periodo.nombre }}</p>
+    <div class="space-y-2">
+      {% for e in f.desglose %}
+      <div><div class="flex justify-between font-label-md text-label-md"><span>{{ e.nombre }}</span><span class="font-numeric-table {{ 'text-error font-bold' if e.pct is not none and e.pct < 70 }}">{{ e.pct|pct }}{{ '%' if e.pct is not none }}</span></div>
+      <div class="h-1.5 rounded-full bg-surface-container overflow-hidden"><div class="h-full rounded-full {{ 'bg-error' if e.pct is not none and e.pct < 70 else 'bg-primary-container' }}" style="width: {{ e.pct or 0 }}%"></div></div></div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+  <div class="lg:col-span-5 bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+    <h2 class="font-headline-md text-headline-md text-primary tracking-tight mb-1">Registrar acompañamiento</h2>
+    <p class="font-body-sm text-body-sm text-on-surface-variant mb-space-md">Deja constancia de dificultades, estrategias, fortalezas o compromisos.</p>
+    <form id="form-obs" class="space-y-space-sm" novalidate>
+      <label class="block"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tipo</span>
+        <select name="tipo" required class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2 font-body-md text-body-md outline-none focus:ring-2 focus:ring-primary-container">
+          {% for k, v in tipos.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}
+        </select></label>
+      <label class="block"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Área o aspecto (opcional)</span>
+        <input name="aspecto" maxlength="150" class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2 font-body-md text-body-md outline-none focus:ring-2 focus:ring-primary-container"/></label>
+      <label class="block"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Descripción</span>
+        <textarea name="descripcion" rows="4" required maxlength="2000" class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2 font-body-md text-body-md outline-none focus:ring-2 focus:ring-primary-container"></textarea></label>
+      <button type="submit" class="w-full rounded-lg bg-primary-container text-on-primary font-label-md text-label-md py-2.5 hover:bg-primary transition-colors">Guardar en la bitácora</button>
+    </form>
+  </div>
+  <div class="lg:col-span-7 bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+    <h2 class="font-headline-md text-headline-md text-primary tracking-tight mb-space-md">Bitácora de acompañamiento</h2>
+    <ol id="lista-obs" class="space-y-space-md">
+      {% for o in p.observaciones %}
+      <li class="flex gap-3">
+        <div class="w-9 h-9 shrink-0 rounded-full flex items-center justify-center {{ tipo_color[o.tipo] }}"><span class="material-symbols-outlined text-[18px]">{{ tipo_icono[o.tipo] }}</span></div>
+        <div><div class="font-label-md text-label-md font-bold text-on-surface">{{ o.tipo_label }}{% if o.aspecto %} · {{ o.aspecto }}{% endif %}</div>
+        <p class="font-body-md text-body-md text-on-surface-variant">{{ o.descripcion }}</p>
+        <div class="font-label-sm text-label-sm text-outline mt-0.5">{{ o.fecha }} · {{ o.autor }}</div></div>
+      </li>
+      {% endfor %}
+    </ol>
+    <p id="obs-vacia" class="font-body-md text-body-md text-on-surface-variant {{ 'hidden' if p.observaciones }}">Aún no hay observaciones registradas.</p>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var form = document.getElementById('form-obs');
+  var ICONOS = {{ tipo_icono|tojson }}, COLORES = {{ tipo_color|tojson }};
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var d = { tipo: form.tipo.value, aspecto: form.aspecto.value, descripcion: form.descripcion.value };
+    if (!d.descripcion.trim()) { App.toast('Escribe una descripción.', 'error'); form.descripcion.focus(); return; }
+    var btn = form.querySelector('button'); btn.disabled = true;
+    App.api('POST', '/api/estudiantes/{{ p.insc.id }}/observaciones', d).then(function (o) {
+      var li = document.createElement('li'); li.className = 'flex gap-3';
+      var ic = document.createElement('div'); ic.className = 'w-9 h-9 shrink-0 rounded-full flex items-center justify-center ' + COLORES[o.tipo];
+      ic.innerHTML = '<span class="material-symbols-outlined text-[18px]"></span>'; ic.firstChild.textContent = ICONOS[o.tipo];
+      var cuerpo = document.createElement('div');
+      var t = document.createElement('div'); t.className = 'font-label-md text-label-md font-bold text-on-surface'; t.textContent = o.tipo_label + (o.aspecto ? ' · ' + o.aspecto : '');
+      var tx = document.createElement('p'); tx.className = 'font-body-md text-body-md text-on-surface-variant'; tx.textContent = o.descripcion;
+      var m = document.createElement('div'); m.className = 'font-label-sm text-label-sm text-outline mt-0.5'; m.textContent = o.fecha + ' · ' + o.autor;
+      cuerpo.append(t, tx, m); li.append(ic, cuerpo);
+      document.getElementById('lista-obs').prepend(li);
+      document.getElementById('obs-vacia').classList.add('hidden');
+      form.reset(); App.toast('Observación registrada.');
+    }).catch(function (e) { App.toast(e.message, 'error'); }).finally(function () { btn.disabled = false; });
+  });
+})();
+</script>
+{% endblock %}

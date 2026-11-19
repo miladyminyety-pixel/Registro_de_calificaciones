@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Mis áreas y secciones{% endblock %}
+{% set icono_estilo = {
+  'esp': 'bg-secondary-fixed text-on-secondary-fixed', 'mat': 'bg-primary-container text-on-primary',
+  'soc': 'bg-primary-fixed text-on-primary-fixed', 'nat': 'bg-tertiary-fixed text-on-tertiary-fixed',
+  'ing': 'bg-secondary-container text-on-secondary-container', 'fis': 'bg-primary-fixed-dim text-on-primary-fixed',
+  'art': 'bg-tertiary-container text-on-tertiary', 'fihr': 'bg-tertiary-fixed-dim text-on-tertiary-fixed'} %}
+{% set rango = {'A': 'bg-secondary-fixed text-on-secondary-fixed', 'B': 'bg-secondary-fixed text-on-secondary-fixed',
+  'C': 'bg-surface-container text-on-surface', 'D': 'bg-error-container text-on-error-container'} %}
+{% set nombre_rango = {'A': 'Excelente', 'B': 'Muy Bueno', 'C': 'Bueno', 'D': 'Insuficiente'} %}
+{% block content %}
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-lg mb-space-lg">
+  <div>
+    <h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">Mis áreas y secciones</h1>
+    <p class="font-body-lg text-body-lg text-on-surface-variant mt-1">Seguimiento del desempeño y las evaluaciones de cada área curricular.</p>
+  </div>
+  {% if d.n_areas is defined and d.n_con_pendientes %}
+  <div class="bg-surface-container-lowest rounded-xl shadow-sm px-space-lg py-space-sm">
+    <div class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Áreas con calificaciones pendientes</div>
+    <div class="font-headline-sm text-headline-sm text-error">{{ d.n_con_pendientes }} Pendiente{{ '' if d.n_con_pendientes == 1 else 's' }}</div>
+  </div>
+  {% endif %}
+</div>
+
+{% if d.secciones %}
+<div class="flex flex-wrap items-center gap-2">
+  <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mr-1">Filtrar Sección:</span>
+  <a href="{{ url_for('pages.areas') }}" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md transition-all shadow-sm {{ 'bg-primary text-on-primary' if not d.seccion_id else 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container hover:text-on-surface' }}"><span class="material-symbols-outlined text-[16px]">apps</span>Todas las Secciones</a>
+  {% for s in d.secciones %}
+  <a href="{{ url_for('pages.areas', seccion=s.id) }}" class="px-3 py-1.5 rounded-full font-label-md text-label-md transition-all shadow-sm {{ 'bg-primary text-on-primary' if d.seccion_id == s.id else 'bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container hover:text-on-surface' }}">{{ s.seccion }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if d.vacio %}
+<div class="mt-space-lg bg-surface-container-lowest rounded-xl shadow-sm p-space-xl text-center">
+  <span class="material-symbols-outlined text-[40px] text-outline">menu_book</span>
+  <h2 class="font-headline-md text-headline-md text-primary mt-2">No tienes áreas asignadas</h2>
+  <p class="font-body-md text-body-md text-on-surface-variant mt-1">Cuando se te asignen áreas y secciones en este año lectivo aparecerán aquí.</p>
+</div>
+{% else %}
+<div class="mt-space-lg grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-space-lg">
+  {% for a in d.areas %}
+  <div class="flex flex-col justify-between rounded-xl bg-surface-container-lowest p-space-lg shadow-sm transition-all hover:shadow-md">
+    <div>
+      <div class="flex items-center gap-space-sm mb-space-md">
+        <div class="w-12 h-12 rounded-xl {{ icono_estilo[a.estilo] }} flex items-center justify-center shadow-sm"><span class="material-symbols-outlined text-[26px]">{{ a.icono }}</span></div>
+        <div>
+          <span class="font-label-sm text-label-sm uppercase tracking-wider text-secondary font-semibold">{{ a.categoria }}</span>
+          <h2 class="font-headline-sm text-headline-sm text-primary">{{ a.nombre }}</h2>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-1.5 mb-space-md">
+        {% for s in a.secciones %}<span class="px-2 py-0.5 rounded-md bg-surface-container font-label-sm text-label-sm text-on-surface font-medium">{{ s.seccion }}</span>{% endfor %}
+        <span class="ml-auto font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">groups</span> {{ a.estudiantes }} Estudiantes</span>
+      </div>
+      <div class="flex items-center justify-between p-space-sm rounded-xl bg-surface-container-low mb-space-md">
+        <div class="flex flex-col">
+          <span class="font-label-sm text-label-sm text-on-surface-variant">Promedio General</span>
+          <div class="flex items-baseline gap-1.5">
+            <span class="font-headline-lg text-headline-lg font-bold {{ 'text-error' if a.literal == 'D' else 'text-primary' }}">{{ a.promedio|nota }}</span>
+            <span class="font-label-md text-label-md text-on-surface-variant">/ 100</span>
+          </div>
+        </div>
+        {% if a.literal %}<span class="px-3 py-1 rounded-full font-label-md text-label-md font-semibold {{ rango[a.literal] }}">Rango {{ a.literal }} • {{ nombre_rango[a.literal] }}</span>{% endif %}
+      </div>
+      <div class="space-y-2 mb-space-lg">
+        <div class="flex items-center justify-between font-label-sm text-label-sm">
+          <span class="text-on-surface-variant flex items-center gap-1"><span class="material-symbols-outlined text-[15px]">assignment_turned_in</span> {{ a.evaluaciones }} Evaluaciones</span>
+          {% if a.pendientes %}<span class="text-error font-medium">{{ a.pendientes }} por calificar</span>{% elif a.completado is not none %}<span class="font-medium">Al día</span>{% else %}<span class="text-on-surface-variant">Sin evaluaciones</span>{% endif %}
+        </div>
+        <div class="h-2 w-full rounded-full bg-surface-container overflow-hidden" role="progressbar" aria-valuenow="{{ a.completado or 0 }}" aria-valuemin="0" aria-valuemax="100">
+          <div class="h-full rounded-full {{ 'bg-error' if a.pendientes else 'bg-primary-container' }} w-0" style="width: {{ a.completado or 0 }}%"></div>
+        </div>
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-2">
+      {% for s in a.secciones %}
+      <a href="{{ url_for('pages.registro', carga=s.carga_id) }}" class="flex-1 text-center px-3 py-2 rounded-lg bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface font-label-md text-label-md transition-colors">Calificar {{ s.seccion }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

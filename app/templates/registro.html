@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+{% block title %}Registro de Calificaciones{% endblock %}
+{% set tono = {'A': 'bg-secondary-fixed text-on-secondary-fixed', 'B': 'bg-primary-fixed text-on-primary-fixed',
+  'C': 'bg-surface-container text-on-surface', 'D': 'bg-error-container text-on-error-container',
+  'neutral': 'bg-surface-container text-on-surface-variant'} %}
+{% block content %}
+{% if not m %}
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-xl text-center">
+  <span class="material-symbols-outlined text-[40px] text-outline">edit_document</span>
+  <h1 class="font-headline-md text-headline-md text-primary mt-2">Registro de Calificaciones</h1>
+  <p class="font-body-md text-body-md text-on-surface-variant mt-1">No tienes áreas asignadas en este año lectivo.</p>
+</div>
+{% else %}
+{% set cerrado = m.periodo.estado == 'cerrado' %}
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-lg mb-space-lg">
+  <div>
+    <div class="flex items-center gap-2 mb-1">
+      <span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm tracking-wide uppercase">{{ m.periodo.nombre }}</span>
+      {% if cerrado %}<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant font-label-sm text-label-sm uppercase">Cerrado · solo lectura</span>{% endif %}
+    </div>
+    <h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">Registro de Calificaciones</h1>
+    <p class="font-body-lg text-body-lg text-on-surface-variant mt-1">{{ m.carga.area_titulo }} · {{ m.carga.grado_nombre }} {{ m.carga.letra }}</p>
+  </div>
+  <div class="flex flex-wrap items-center gap-space-sm">
+    <label class="flex items-center gap-2 bg-surface-container-lowest px-3 py-2 rounded-xl shadow-sm">
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Área / Sección</span>
+      <select id="selector-carga" class="bg-transparent font-label-md text-label-md text-on-surface outline-none cursor-pointer">
+        {% for c in cargas %}<option value="{{ c.id }}" {% if c.id == m.carga.id %}selected{% endif %}>{{ c.area }} · {{ c.seccion }}</option>{% endfor %}
+      </select>
+    </label>
+    {% if not cerrado %}
+    <a href="{{ url_for('pages.evaluacion_nueva', carga=m.carga.id) }}" class="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-surface-container-lowest shadow-sm text-primary font-label-md text-label-md hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[18px]">add_circle</span> Nueva evaluación</a>
+    <button id="btn-guardar" type="button" disabled class="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-primary-container text-on-primary font-label-md text-label-md shadow-sm transition-colors enabled:hover:bg-primary disabled:opacity-50 disabled:cursor-not-allowed"><span class="material-symbols-outlined text-[18px]">save</span><span id="btn-guardar-texto">Guardar cambios</span></button>
+    {% endif %}
+  </div>
+</div>
+
+{% if not m.evaluaciones %}
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-xl text-center">
+  <span class="material-symbols-outlined text-[40px] text-outline">assignment_add</span>
+  <h2 class="font-headline-md text-headline-md text-primary mt-2">Todavía no hay evaluaciones en este período</h2>
+  <p class="font-body-md text-body-md text-on-surface-variant mt-1">Crea la primera evaluación para empezar a registrar calificaciones.</p>
+  {% if not cerrado %}<a href="{{ url_for('pages.evaluacion_nueva', carga=m.carga.id) }}" class="inline-flex items-center gap-1 mt-space-md px-4 py-2 rounded-xl bg-primary-container text-on-primary font-label-md text-label-md hover:bg-primary transition-colors"><span class="material-symbols-outlined text-[18px]">add_circle</span> Nueva evaluación</a>{% endif %}
+</div>
+{% else %}
+{% if not m.planificacion_completa %}
+<div class="mb-space-md flex items-start gap-2 rounded-xl bg-surface-container-low px-space-md py-space-sm text-on-surface-variant font-label-md text-label-md">
+  <span class="material-symbols-outlined text-[18px] text-secondary">info</span>
+  <span>Las ponderaciones suman <strong>{{ m.peso_total|pct }}%</strong>. El promedio se calcula sobre el peso ya calificado; completa el 100% para el cierre del período.</span>
+</div>
+{% endif %}
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse" id="matriz" data-carga="{{ m.carga.id }}">
+      <thead>
+        <tr class="bg-surface-container text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+          <th class="px-space-md py-space-sm w-10">#</th>
+          <th class="px-space-md py-space-sm min-w-[220px]">Estudiante</th>
+          {% for e in m.evaluaciones %}
+          <th class="px-space-sm py-space-sm text-center min-w-[120px]">
+            <div class="normal-case tracking-normal font-semibold text-on-surface" title="{{ e.nombre }}">{{ e.nombre }}</div>
+            <div class="font-normal">{{ e.peso|pct }}% · /{{ e.max_puntaje|pct }}</div>
+            {% if not cerrado %}<button type="button" class="btn-borrar-eval mt-0.5 text-on-surface-variant hover:text-error" data-id="{{ e.id }}" data-nombre="{{ e.nombre }}" title="Eliminar evaluación"><span class="material-symbols-outlined text-[16px]">delete</span></button>{% endif %}
+          </th>
+          {% endfor %}
+          <th class="px-space-md py-space-sm text-center">Promedio</th>
+          <th class="px-space-md py-space-sm text-center">Literal</th>
+          <th class="px-space-md py-space-sm">Estado académico</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-surface-container font-body-sm text-body-sm">
+        {% for f in m.filas %}
+        <tr class="fila hover:bg-surface-container-low transition-colors" data-insc="{{ f.insc_id }}" data-acomp="{{ 1 if f.estado.texto == 'Plan de Recuperación' else 0 }}">
+          <td class="px-space-md py-space-sm text-on-surface-variant">{{ f.n }}</td>
+          <td class="px-space-md py-space-sm">
+            <a href="{{ url_for('pages.perfil', insc_id=f.insc_id) }}" class="flex items-center gap-3 group">
+              <div class="w-9 h-9 rounded-full bg-primary-container text-on-primary font-bold flex items-center justify-center font-label-sm text-label-sm">{{ f.iniciales }}</div>
+              <div><span class="font-label-md text-label-md font-bold text-on-surface block group-hover:text-primary">{{ f.nombre }}</span><span class="font-label-sm text-label-sm text-on-surface-variant">{{ f.matricula }}</span></div>
+            </a>
+          </td>
+          {% for e in m.evaluaciones %}
+          <td class="px-space-sm py-space-sm text-center">
+            <input type="number" inputmode="decimal" step="any" min="0" max="{{ e.max_puntaje }}"
+                   class="celda w-20 text-center rounded-lg bg-surface-container-low px-2 py-1.5 font-numeric-table text-numeric-table outline-none focus:ring-2 focus:ring-primary-container disabled:opacity-60"
+                   data-eval="{{ e.id }}" data-max="{{ e.max_puntaje }}" data-peso="{{ e.peso }}"
+                   value="{{ f.valores[e.id] if f.valores[e.id] is not none else '' }}" data-original="{{ f.valores[e.id] if f.valores[e.id] is not none else '' }}"
+                   aria-label="{{ e.nombre }} de {{ f.nombre }}" {% if cerrado %}disabled{% endif %}/>
+          </td>
+          {% endfor %}
+          <td class="px-space-md py-space-sm text-center font-numeric-table text-numeric-table font-bold text-primary celda-promedio">{{ f.promedio|nota }}</td>
+          <td class="px-space-md py-space-sm text-center celda-literal"><span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold {{ tono[f.literal or 'neutral'] }}">{{ f.literal or '—' }}</span></td>
+          <td class="px-space-md py-space-sm celda-estado"><span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-label-sm text-label-sm font-semibold {{ tono[f.estado.tono] }}"><span class="material-symbols-outlined text-[14px]">{{ f.estado.icono }}</span>{{ f.estado.texto }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md mt-space-lg">
+  <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block">Promedio de la sección</span><span id="res-promedio" class="font-headline-xl text-headline-xl text-primary font-bold">{{ m.resumen.promedio|nota }}</span></div>
+  <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block">Tasa de aprobación (≥ 70)</span><span id="res-aprob" class="font-headline-xl text-headline-xl text-primary font-bold">{{ (m.resumen.tasa_aprobacion|pct ~ '%') if m.resumen.tasa_aprobacion is not none else '—' }}</span></div>
+  <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block">Calificaciones pendientes</span><span id="res-pend" class="font-headline-xl text-headline-xl text-error font-bold">{{ m.resumen.pendientes }}</span></div>
+</div>
+<div class="mt-space-md flex flex-wrap gap-x-6 gap-y-1 text-on-surface-variant font-label-sm text-label-sm">
+  <span><strong>A</strong> 90-100 Excelente</span><span><strong>B</strong> 80-89 Muy Bueno</span><span><strong>C</strong> 70-79 Bueno</span><span><strong>D</strong> &lt; 70 Insuficiente (mínimo aprobatorio: 70)</span>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+{% if m and m.evaluaciones %}
+<script>
+(function () {
+  'use strict';
+  var tabla = document.getElementById('matriz');
+  var cargaId = tabla.dataset.carga;
+  var boton = document.getElementById('btn-guardar');
+  var botonTexto = document.getElementById('btn-guardar-texto');
+  var TONO = {
+    A: 'bg-secondary-fixed text-on-secondary-fixed', B: 'bg-primary-fixed text-on-primary-fixed',
+    C: 'bg-surface-container text-on-surface', D: 'bg-error-container text-on-error-container',
+    neutral: 'bg-surface-container text-on-surface-variant'
+  };
+  var ESTADO = {
+    A: ['Aprobado con Excelencia', 'stars'], B: ['Aprobado Satisfactorio', 'check_circle'],
+    C: ['Aprobado Básico', 'verified_user'], N: ['Sin calificar', 'pending']
+  };
+
+  // Mismas reglas que el servidor (app/grading.py)
+  function r1(x) { return Math.round((x + 1e-9) * 10) / 10; }
+  function literal(p) { if (p === null) return null; var v = r1(p); return v >= 90 ? 'A' : v >= 80 ? 'B' : v >= 70 ? 'C' : 'D'; }
+  function promedio(fila) {
+    var aporte = 0, pesoCal = 0;
+    fila.querySelectorAll('.celda').forEach(function (inp) {
+      var max = parseFloat(inp.dataset.max), peso = parseFloat(inp.dataset.peso);
+      if (inp.value === '' || !(max > 0)) return;
+      var v = Math.min(Math.max(parseFloat(inp.value), 0), max);
+      if (isNaN(v)) return;
+      aporte += v / max * peso; pesoCal += peso;
+    });
+    return pesoCal > 0 ? r1(aporte / pesoCal * 100) : null;
+  }
+  function fmt(v) { return v === null ? '—' : String(v); }
+
+  function pintarFila(fila) {
+    var p = promedio(fila), l = literal(p);
+    fila.querySelector('.celda-promedio').textContent = fmt(p);
+    fila.querySelector('.celda-literal').innerHTML = '<span class="px-2 py-0.5 rounded-full font-label-sm text-label-sm font-bold ' + TONO[l || 'neutral'] + '">' + (l || '—') + '</span>';
+    var est;
+    if (l === 'D') est = fila.dataset.acomp === '1' ? ['Plan de Recuperación', 'crisis_alert'] : ['Alerta de Acompañamiento', 'warning'];
+    else est = ESTADO[l || 'N'];
+    fila.querySelector('.celda-estado').innerHTML = '<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full font-label-sm text-label-sm font-semibold ' + TONO[l || 'neutral'] + '"><span class="material-symbols-outlined text-[14px]">' + est[1] + '</span>' + est[0] + '</span>';
+    return p;
+  }
+  function resumen() {
+    var ps = [], pend = 0;
+    tabla.querySelectorAll('tbody tr.fila').forEach(function (f) {
+      var p = promedio(f); if (p !== null) ps.push(p);
+      f.querySelectorAll('.celda').forEach(function (i) { if (i.value === '') pend++; });
+    });
+    var prom = ps.length ? r1(ps.reduce(function (a, b) { return a + b; }, 0) / ps.length) : null;
+    var ap = ps.filter(function (p) { return r1(p) >= 70; }).length;
+    document.getElementById('res-promedio').textContent = fmt(prom);
+    document.getElementById('res-aprob').textContent = ps.length ? (r1(100 * ap / ps.length)) + '%' : '—';
+    document.getElementById('res-pend').textContent = pend;
+  }
+
+  function cambios() {
+    var lista = [];
+    tabla.querySelectorAll('.celda').forEach(function (inp) {
+      if (inp.value === inp.dataset.original) return;
+      lista.push({
+        evaluacion_id: parseInt(inp.dataset.eval, 10),
+        inscripcion_id: parseInt(inp.closest('tr').dataset.insc, 10),
+        puntaje: inp.value === '' ? null : parseFloat(inp.value)
+      });
+    });
+    return lista;
+  }
+  function actualizarBoton() {
+    if (!boton) return;
+    var n = cambios().length;
+    boton.disabled = n === 0;
+    botonTexto.textContent = n ? 'Guardar cambios (' + n + ')' : 'Guardar cambios';
+  }
+  function validar(inp) {
+    var max = parseFloat(inp.dataset.max), v = parseFloat(inp.value);
+    var mal = inp.value !== '' && (isNaN(v) || v < 0 || v > max);
+    inp.classList.toggle('ring-2', mal); inp.classList.toggle('ring-error', mal);
+    inp.title = mal ? 'Debe estar entre 0 y ' + max : '';
+    return !mal;
+  }
+
+  tabla.addEventListener('input', function (ev) {
+    if (!ev.target.classList.contains('celda')) return;
+    validar(ev.target); pintarFila(ev.target.closest('tr')); resumen(); actualizarBoton();
+  });
+  tabla.addEventListener('keydown', function (ev) {
+    if (!ev.target.classList.contains('celda') || ev.key !== 'Enter') return;
+    ev.preventDefault();
+    var col = Array.prototype.indexOf.call(ev.target.closest('tr').querySelectorAll('.celda'), ev.target);
+    var sig = ev.target.closest('tr').nextElementSibling;
+    if (sig) { var c = sig.querySelectorAll('.celda')[col]; if (c) { c.focus(); c.select(); } }
+  });
+
+  if (boton) {
+    boton.addEventListener('click', function () {
+      var inputs = Array.prototype.slice.call(tabla.querySelectorAll('.celda'));
+      if (!inputs.every(validar)) { App.toast('Corrige las calificaciones marcadas en rojo.', 'error'); return; }
+      var lista = cambios(); if (!lista.length) return;
+      boton.disabled = true; botonTexto.textContent = 'Guardando…';
+      App.api('PUT', '/api/cargas/' + cargaId + '/calificaciones', { cambios: lista }).then(function (r) {
+        tabla.querySelectorAll('.celda').forEach(function (i) { i.dataset.original = i.value; });
+        App.toast(r.guardados + ' calificación' + (r.guardados === 1 ? '' : 'es') + ' guardada' + (r.guardados === 1 ? '' : 's') + '.');
+        actualizarBoton();
+      }).catch(function (e) {
+        App.toast(e.message, 'error'); actualizarBoton();
+      });
+    });
+  }
+  window.addEventListener('beforeunload', function (ev) {
+    if (cambios().length) { ev.preventDefault(); ev.returnValue = ''; }
+  });
+
+  document.querySelectorAll('.btn-borrar-eval').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (!confirm('¿Eliminar la evaluación "' + b.dataset.nombre + '" y todas sus calificaciones? Esta acción no se puede deshacer.')) return;
+      App.api('DELETE', '/api/evaluaciones/' + b.dataset.id).then(function () {
+        location.reload();
+      }).catch(function (e) { App.toast(e.message, 'error'); });
+    });
+  });
+})();
+</script>
+{% endif %}
+<script>
+(function () {
+  var sel = document.getElementById('selector-carga');
+  if (sel) sel.addEventListener('change', function () { location.href = '/registro?carga=' + sel.value; });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-xl text-center max-w-xl mx-auto mt-space-xl">
+  <span class="material-symbols-outlined text-[40px] text-outline">construction</span>
+  <h1 class="font-headline-lg text-headline-lg text-primary mt-2">{{ titulo }}</h1>
+  <p class="font-body-md text-body-md text-on-surface-variant mt-1">{{ texto }}</p>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Acerca de la Aplicación{% endblock %}
+{% block content %}
+<div class="mb-space-lg"><h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">Acerca de la Aplicación</h1></div>
+<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg max-w-3xl space-y-space-sm font-body-md text-body-md text-on-surface-variant">
+  <p><strong class="text-on-surface">Registro de Calificaciones</strong> es un portal docente para registrar evaluaciones y calificaciones, calcular promedios por período y dar seguimiento a estudiantes en riesgo.</p>
+  <h2 class="font-headline-sm text-headline-sm text-primary pt-2">Escala de calificación</h2>
+  <ul class="list-disc pl-5"><li><strong>A</strong> · 90-100 · Excelente</li><li><strong>B</strong> · 80-89 · Muy Bueno</li><li><strong>C</strong> · 70-79 · Bueno</li><li><strong>D</strong> · menos de 70 · Insuficiente</li></ul>
+  <h2 class="font-headline-sm text-headline-sm text-primary pt-2">Cálculo del promedio</h2>
+  <p>Cada evaluación aporta <em>puntaje ÷ máximo × peso</em>. El promedio del período se calcula sobre el peso ya calificado, de modo que refleja el desempeño real aun cuando falten evaluaciones. El mínimo aprobatorio es 70.</p>
+</section>
+{% endblock %}

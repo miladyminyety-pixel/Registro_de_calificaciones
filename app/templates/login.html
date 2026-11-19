@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+{% include "_head.html" %}
+<title>Iniciar sesión · Registro de Calificaciones</title>
+</head>
+<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex items-center justify-center px-4">
+<main class="w-full max-w-md">
+  <div class="flex items-center justify-center gap-space-sm mb-space-lg">
+    <div class="w-12 h-12 rounded-xl bg-primary-container flex items-center justify-center text-on-primary shadow"><span class="material-symbols-outlined text-[28px]">school</span></div>
+    <div class="flex flex-col">
+      <span class="font-headline-md text-headline-md text-primary leading-none">Registro Digital</span>
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-1">MINERD • Rep. Dominicana</span>
+    </div>
+  </div>
+  <form method="post" action="{{ url_for('auth.login') }}" class="bg-surface-container-lowest rounded-xl shadow-sm p-space-xl space-y-space-md" novalidate>
+    <h1 class="font-headline-lg text-headline-lg text-primary">Iniciar sesión</h1>
+    <p class="font-body-md text-body-md text-on-surface-variant">Accede a tu portal docente.</p>
+    {% if error %}
+    <div role="alert" class="flex items-start gap-2 rounded-lg bg-error-container text-on-error-container px-3 py-2 font-label-md text-label-md">
+      <span class="material-symbols-outlined text-[18px]">error</span><span>{{ error }}</span>
+    </div>
+    {% endif %}
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <input type="hidden" name="next" value="{{ next }}"/>
+    <label class="block">
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Usuario</span>
+      <input name="username" value="{{ username }}" autocomplete="username" autofocus required maxlength="80"
+             class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2.5 font-body-md text-body-md outline-none focus:ring-2 focus:ring-primary-container"/>
+    </label>
+    <label class="block">
+      <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Contraseña</span>
+      <input name="password" type="password" autocomplete="current-password" required maxlength="200"
+             class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2.5 font-body-md text-body-md outline-none focus:ring-2 focus:ring-primary-container"/>
+    </label>
+    <button type="submit" class="w-full rounded-lg bg-primary-container text-on-primary font-label-md text-label-md py-2.5 hover:bg-primary transition-colors">Entrar</button>
+  </form>
+  <p class="text-center mt-space-md font-label-sm text-label-sm text-on-surface-variant italic">«Evalúa, registra y acompaña»</p>
+</main>
+</body>
+</html>

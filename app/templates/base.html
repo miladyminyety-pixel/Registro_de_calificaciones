@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+{% include "_head.html" %}
+<meta name="csrf-token" content="{{ csrf_token() }}"/>
+<title>{% block title %}Registro Digital{% endblock %} · Registro de Calificaciones</title>
+</head>
+<body class="bg-surface font-body-md text-on-surface antialiased">
+{% set items = [
+  ('dashboard', 'dashboard', 'Dashboard', 'pages.dashboard'),
+  ('mis-secciones', 'class', 'Mis Secciones', 'pages.mis_secciones'),
+  ('areas-curriculares', 'menu_book', 'Áreas Curriculares', 'pages.areas'),
+  ('registro-de-calificaciones', 'edit_document', 'Registro de Calificaciones', 'pages.registro'),
+  ('evaluaciones', 'assignment_turned_in', 'Evaluaciones', 'pages.evaluaciones'),
+  ('estudiantes', 'groups', 'Estudiantes', 'pages.estudiantes'),
+  ('reportes-academicos', 'summarize', 'Reportes Académicos', 'pages.reportes'),
+  ('configuracion', 'settings', 'Configuración', 'pages.configuracion'),
+  ('acerca-de-la-aplicacion', 'info', 'Acerca de la Aplicación', 'pages.acerca'),
+] %}
+<aside class="fixed left-0 top-0 h-full w-72 bg-surface-container-lowest shadow-[0_1px_8px_rgba(23,54,93,0.06)] z-50 flex flex-col justify-between">
+  <div class="flex flex-col flex-1 overflow-y-auto">
+    <div class="px-space-lg pt-space-lg pb-space-md">
+      <div class="flex items-center gap-space-sm">
+        <div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-on-primary shadow-[0_1px_4px_rgba(23,54,93,0.12)]"><span class="material-symbols-outlined text-[24px]">school</span></div>
+        <div class="flex flex-col">
+          <span class="font-headline-sm text-headline-sm text-primary tracking-tight leading-none">Registro Digital</span>
+          <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mt-1">MINERD • Rep. Dominicana</span>
+        </div>
+      </div>
+      <div class="mt-space-sm px-space-xs py-1 bg-surface-container-low rounded-lg text-center"><span class="font-label-sm text-label-sm text-on-surface-variant italic">«Evalúa, registra y acompaña»</span></div>
+    </div>
+    <div class="px-space-md py-space-xs"><div class="h-px bg-surface-container w-full"></div></div>
+    <nav class="flex-1 px-space-md py-space-xs space-y-1">
+      {% for key, icono, etiqueta, endpoint in items %}
+      <a href="{{ url_for(endpoint) }}" {% if nav == key %}aria-current="page"{% endif %}
+         class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg transition-colors {% if nav == key %}bg-primary-container text-on-primary font-label-md{% else %}text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface font-body-md text-body-md{% endif %}">
+        <span class="material-symbols-outlined text-[20px]">{{ icono }}</span><span>{{ etiqueta }}</span>
+      </a>
+      {% endfor %}
+    </nav>
+  </div>
+  <div class="p-space-md bg-surface-container-low">
+    <div class="flex items-center justify-between gap-space-sm p-space-sm rounded-lg bg-surface-container-lowest shadow-[0_1px_2px_rgba(23,54,93,0.05)]">
+      <div class="flex items-center gap-space-sm min-w-0">
+        <div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[20px]">person</span></div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-label-md text-label-md text-on-surface truncate font-semibold">{{ usuario.nombre }}</span>
+          <span class="font-label-sm text-label-sm text-on-surface-variant truncate">{{ usuario.cargo }}</span>
+        </div>
+      </div>
+      <form method="post" action="{{ url_for('auth.logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <button type="submit" class="p-space-xs text-on-surface-variant hover:text-error hover:bg-error-container rounded-lg transition-colors" title="Cerrar sesión"><span class="material-symbols-outlined text-[20px]">logout</span></button>
+      </form>
+    </div>
+  </div>
+</aside>
+
+<div class="pl-72 flex flex-col min-h-screen">
+  <header class="fixed top-0 left-72 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(23,54,93,0.05)] z-40 flex items-center justify-between px-gutter-lg">
+    <div class="flex items-center text-on-surface-variant font-label-md text-label-md">
+      <span class="text-primary font-semibold">MINERD</span>
+      <span class="material-symbols-outlined text-[16px] mx-1 text-outline">chevron_right</span>
+      <span class="text-on-surface">Portal Docente</span>
+    </div>
+    <div class="flex items-center gap-space-md">
+      {% if ctx and ctx.anio %}
+      <div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded-lg">
+        <span class="material-symbols-outlined text-[18px] text-on-surface-variant">calendar_today</span>
+        <select aria-label="Año lectivo" data-contexto="anio" class="bg-transparent font-label-md text-label-md text-on-surface outline-none cursor-pointer pr-1">
+          {% for a in ctx.anios %}<option value="{{ a.id }}" {% if a.id == ctx.anio.id %}selected{% endif %}>{{ a.nombre.replace('-', ' - ') }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="flex items-center gap-space-xs bg-surface-container px-space-sm py-1 rounded-lg">
+        <span class="material-symbols-outlined text-[18px] text-on-surface-variant">timelapse</span>
+        <select aria-label="Período" data-contexto="periodo" class="bg-transparent font-label-md text-label-md text-on-surface outline-none cursor-pointer pr-1">
+          {% for p in ctx.periodos %}<option value="{{ p.id }}" {% if ctx.periodo and p.id == ctx.periodo.id %}selected{% endif %}>{{ p.nombre }}</option>{% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="h-6 w-px bg-surface-container"></div>
+      <div class="flex items-center gap-space-sm">
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div>
+        <div class="hidden xl:flex flex-col text-left">
+          <span class="font-label-md text-label-md text-on-surface font-semibold leading-none">{{ usuario.nombre }}</span>
+          <span class="font-label-sm text-label-sm text-on-surface-variant leading-none mt-1">{{ usuario.nivel }}</span>
+        </div>
+      </div>
+    </div>
+  </header>
+  <main class="flex-1 w-full pt-16 bg-surface px-gutter-lg py-margin-md">
+    <div class="flex flex-col w-full">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+</div>
+<div id="toast" class="fixed bottom-6 right-6 z-[60] hidden max-w-sm rounded-xl px-4 py-3 shadow-lg font-label-md text-label-md" role="status" aria-live="polite"></div>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

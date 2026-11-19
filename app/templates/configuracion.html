@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Configuración{% endblock %}
+{% block content %}
+<div class="mb-space-lg"><h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">Configuración</h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant mt-1">Datos de tu cuenta y seguridad.</p></div>
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-space-lg">
+  <section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+    <h2 class="font-headline-md text-headline-md text-primary mb-space-sm">Mi cuenta</h2>
+    <dl class="space-y-2 font-body-md text-body-md">
+      <div class="flex justify-between"><dt class="text-on-surface-variant">Nombre</dt><dd class="font-semibold">{{ usuario.nombre }}</dd></div>
+      <div class="flex justify-between"><dt class="text-on-surface-variant">Usuario</dt><dd class="font-semibold">{{ usuario.username }}</dd></div>
+      <div class="flex justify-between"><dt class="text-on-surface-variant">Cargo</dt><dd class="font-semibold">{{ usuario.cargo }}</dd></div>
+      <div class="flex justify-between"><dt class="text-on-surface-variant">Nivel</dt><dd class="font-semibold">{{ usuario.nivel }}</dd></div>
+    </dl>
+  </section>
+  <section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+    <h2 class="font-headline-md text-headline-md text-primary mb-space-sm">Cambiar contraseña</h2>
+    {% if mensaje %}<div role="status" class="mb-space-sm rounded-lg bg-secondary-fixed text-on-secondary-fixed px-3 py-2 font-label-md text-label-md">{{ mensaje }}</div>{% endif %}
+    {% if error %}<div role="alert" class="mb-space-sm rounded-lg bg-error-container text-on-error-container px-3 py-2 font-label-md text-label-md">{{ error }}</div>{% endif %}
+    <form method="post" class="space-y-space-sm">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+      {% for nombre, etiqueta, auto in [('actual', 'Contraseña actual', 'current-password'), ('nueva', 'Nueva contraseña (mínimo 8 caracteres)', 'new-password'), ('confirmar', 'Confirmar nueva contraseña', 'new-password')] %}
+      <label class="block"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">{{ etiqueta }}</span>
+        <input type="password" name="{{ nombre }}" autocomplete="{{ auto }}" required maxlength="200" class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2.5 font-body-md text-body-md outline-none focus:ring-2 {{ 'ring-2 ring-error' if campo == nombre else 'focus:ring-primary-container' }}"/></label>
+      {% endfor %}
+      <button type="submit" class="rounded-lg bg-primary-container text-on-primary font-label-md text-label-md px-5 py-2.5 hover:bg-primary transition-colors">Actualizar contraseña</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

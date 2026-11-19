@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Mis Secciones{% endblock %}
+{% block content %}
+<div class="mb-space-lg">
+  <h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">Mis Secciones</h1>
+  <p class="font-body-lg text-body-lg text-on-surface-variant mt-1">Grupos donde impartes clases o eres tutor/a.</p>
+</div>
+{% if not secciones %}
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-xl text-center font-body-md text-body-md text-on-surface-variant">No tienes secciones en este año lectivo.</div>
+{% else %}
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-space-lg">
+  {% for s in secciones %}
+  <section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+    <div class="flex items-start justify-between">
+      <div><h2 class="font-headline-lg text-headline-lg text-primary">{{ s.grado_nombre }} {{ s.letra }}</h2><p class="font-label-md text-label-md text-on-surface-variant">{{ s.modalidad }}</p></div>
+      <span class="flex items-center gap-1 font-label-md text-label-md text-on-surface-variant"><span class="material-symbols-outlined text-[18px]">groups</span>{{ s.estudiantes }}</span>
+    </div>
+    <div class="flex flex-wrap gap-1.5 mt-space-md">
+      {% for c in s.cargas %}<a href="{{ url_for('pages.registro', carga=c.id) }}" class="px-2.5 py-1 rounded-full bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface font-label-sm text-label-sm transition-colors">{{ c.area }}</a>{% endfor %}
+    </div>
+    <a href="{{ url_for('pages.estudiantes', seccion=s.id) }}" class="inline-flex items-center gap-1 mt-space-md text-primary font-label-md text-label-md hover:underline">Ver estudiantes <span class="material-symbols-outlined text-[16px]">arrow_forward</span></a>
+  </section>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

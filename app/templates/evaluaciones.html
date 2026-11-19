@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Evaluaciones{% endblock %}
+{% block content %}
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-lg mb-space-lg">
+  <div>
+    <h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">Evaluaciones</h1>
+    <p class="font-body-lg text-body-lg text-on-surface-variant mt-1">Instrumentos del {{ ctx.periodo.nombre if ctx.periodo else 'período' }} por área y sección.</p>
+  </div>
+  <a href="{{ url_for('pages.evaluacion_nueva') }}" class="inline-flex items-center gap-1 px-4 py-2 rounded-xl bg-primary-container text-on-primary font-label-md text-label-md shadow-sm hover:bg-primary transition-colors"><span class="material-symbols-outlined text-[18px]">add_circle</span> Nueva evaluación</a>
+</div>
+{% if d.vacio %}
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-xl text-center font-body-md text-body-md text-on-surface-variant">No tienes áreas asignadas en este año lectivo.</div>
+{% else %}
+<div class="space-y-space-md">
+  {% for g in d.cargas %}
+  <section class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+    <div class="p-space-md bg-surface-container-low flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2"><span class="material-symbols-outlined text-primary text-[20px]">{{ g.carga.icono }}</span><h2 class="font-headline-sm text-headline-sm text-primary">{{ g.carga.area }} · {{ g.carga.seccion }}</h2></div>
+      <div class="flex items-center gap-3">
+        <span class="font-label-sm text-label-sm px-2.5 py-1 rounded-full {{ 'bg-secondary-fixed text-on-secondary-fixed' if g.completa else 'bg-surface-container text-on-surface-variant' }} font-semibold">{{ g.peso_total|pct }}% de 100%</span>
+        <a href="{{ url_for('pages.registro', carga=g.carga.id) }}" class="font-label-md text-label-md text-primary hover:underline">Calificar</a>
+      </div>
+    </div>
+    {% if g.evaluaciones %}
+    <ul class="divide-y divide-surface-container">
+      {% for e in g.evaluaciones %}
+      <li class="px-space-md py-space-sm flex flex-wrap items-center justify-between gap-2 font-body-sm text-body-sm">
+        <span class="flex items-center gap-2"><span class="material-symbols-outlined text-[18px] text-on-surface-variant">{{ e.icono }}</span><span class="font-label-md text-label-md font-semibold text-on-surface">{{ e.nombre }}</span><span class="text-on-surface-variant">{{ e.tipo }}{% if e.fecha %} · {{ e.fecha }}{% endif %}</span></span>
+        <span class="flex items-center gap-4 text-on-surface-variant"><span>{{ e.peso|pct }}% · /{{ e.max|pct }}</span><span class="{{ 'text-error font-semibold' if e.calificadas < e.total }}">{{ e.calificadas }}/{{ e.total }} calificadas</span></span>
+      </li>{% endfor %}
+    </ul>
+    {% else %}<p class="px-space-md py-space-md font-body-sm text-body-sm text-on-surface-variant">Sin evaluaciones en este período.</p>{% endif %}
+  </section>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

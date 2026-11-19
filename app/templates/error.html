@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+{% include "_head.html" %}
+<title>Error {{ codigo }} · Registro de Calificaciones</title>
+</head>
+<body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex items-center justify-center px-4">
+<main class="max-w-md text-center bg-surface-container-lowest rounded-xl shadow-sm p-space-xl">
+  <span class="material-symbols-outlined text-[48px] text-secondary">{% if codigo == 404 %}search_off{% else %}error{% endif %}</span>
+  <h1 class="font-headline-lg text-headline-lg text-primary mt-2">{{ codigo }}</h1>
+  <p class="font-body-lg text-body-lg text-on-surface-variant mt-1">{{ mensaje }}</p>
+  <a href="/" class="inline-flex items-center gap-1 mt-space-lg rounded-lg bg-primary-container text-on-primary font-label-md text-label-md px-4 py-2 hover:bg-primary transition-colors">
+    <span class="material-symbols-outlined text-[18px]">home</span> Volver al inicio
+  </a>
+</main>
+</body>
+</html>

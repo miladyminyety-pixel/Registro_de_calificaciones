@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block title %}Panel de Control{% endblock %}
+{% set barra_color = {'A': 'bg-secondary', 'B': 'bg-primary-container', 'C': 'bg-surface-tint', 'D': 'bg-error'} %}
+{% set chip_color = {'A': 'text-secondary', 'B': 'text-primary', 'C': 'text-on-surface-variant', 'D': 'text-on-error-container'} %}
+{% block content %}
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-lg mb-space-xl">
+  <div>
+    <div class="flex items-center gap-2 mb-1">
+      <span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm tracking-wide uppercase">Ciclo Formativo {{ ctx.anio.nombre if ctx.anio else '—' }}</span>
+      <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+      <span class="text-on-surface-variant font-label-sm text-label-sm">{% if ctx.periodo %}Período P{{ ctx.periodo.numero }} {{ 'Activo' if ctx.periodo.estado == 'en_curso' else ctx.periodo.estado|replace('_', ' ')|capitalize }}{% endif %}</span>
+    </div>
+    <h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">Panel de Control</h1>
+    <p class="font-body-lg text-body-lg text-on-surface-variant mt-1">Bienvenido a tu espacio de gestión académica y seguimiento curricular.</p>
+  </div>
+  {% if d.secciones %}
+  <div class="flex flex-wrap items-center gap-space-sm bg-surface-container-lowest p-2 rounded-xl shadow-sm">
+    <span class="font-label-sm text-label-sm text-on-surface-variant uppercase pl-2">Sección:</span>
+    <div class="flex gap-1">
+      <a href="{{ url_for('pages.dashboard') }}" class="px-3 py-1.5 rounded-lg font-label-md text-label-md transition-all {{ 'bg-primary-container text-on-primary font-semibold shadow-sm' if not d.seccion_id else 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface' }}">Todas</a>
+      {% for s in d.secciones %}
+      <a href="{{ url_for('pages.dashboard', seccion=s.id) }}" class="px-3 py-1.5 rounded-lg font-label-md text-label-md transition-all {{ 'bg-primary-container text-on-primary font-semibold shadow-sm' if d.seccion_id == s.id else 'text-on-surface-variant hover:bg-surface-container hover:text-on-surface' }}">{{ s.seccion }}</a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% if d.vacio %}
+<div class="bg-surface-container-lowest rounded-xl shadow-sm p-space-xl text-center">
+  <span class="material-symbols-outlined text-[40px] text-outline">inbox</span>
+  <h2 class="font-headline-md text-headline-md text-primary mt-2">Aún no hay datos para mostrar</h2>
+  <p class="font-body-md text-body-md text-on-surface-variant mt-1">No tienes secciones ni áreas asignadas en este año lectivo.</p>
+</div>
+{% else %}
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-space-md mb-space-xl">
+  <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+    <div class="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-primary-fixed/40 pointer-events-none"></div>
+    <div class="flex items-start justify-between">
+      <div>
+        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block">Áreas Curriculares</span>
+        <span class="font-headline-xl text-headline-xl text-primary font-bold mt-1 block">{{ d.n_areas }}</span>
+      </div>
+      <div class="w-11 h-11 rounded-lg bg-surface-container-low text-primary flex items-center justify-center"><span class="material-symbols-outlined text-[24px]">menu_book</span></div>
+    </div>
+    <div class="mt-4 pt-3 flex items-center justify-between">
+      <span class="inline-flex items-center gap-1 font-label-sm text-label-sm text-secondary font-semibold"><span class="material-symbols-outlined text-[16px]">check_circle</span>{{ d.planificacion_pct }}% con planificación completa</span>
+    </div>
+  </div>
+  <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+    <div class="flex items-start justify-between">
+      <div>
+        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block">Estudiantes Registrados</span>
+        <span class="font-headline-xl text-headline-xl text-primary font-bold mt-1 block">{{ d.n_estudiantes }}</span>
+      </div>
+      <div class="w-11 h-11 rounded-lg bg-surface-container-low text-secondary flex items-center justify-center"><span class="material-symbols-outlined text-[24px]">groups</span></div>
+    </div>
+    <div class="mt-4 pt-3 flex flex-wrap items-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
+      {% for nombre, cant in d.por_seccion.items() %}<span class="px-2 py-0.5 rounded bg-surface-container-low text-on-surface font-medium">{{ nombre }}: {{ cant }}</span>{% endfor %}
+    </div>
+  </div>
+  <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between">
+    <div class="flex items-start justify-between">
+      <div>
+        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block">Promedio General P{{ ctx.periodo.numero }}</span>
+        <div class="flex items-baseline gap-2 mt-1">
+          <span class="font-headline-xl text-headline-xl text-primary font-bold">{{ d.promedio_general|nota }}</span>
+          <span class="text-on-surface-variant font-body-sm text-body-sm">/ 100</span>
+          {% if d.literal_general %}<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-bold">Literal {{ d.literal_general }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="w-11 h-11 rounded-lg bg-surface-container-low text-primary flex items-center justify-center"><span class="material-symbols-outlined text-[24px]">analytics</span></div>
+    </div>
+    <div class="mt-4 pt-3 text-on-surface-variant font-body-sm text-body-sm">Sobre {{ d.calificaciones }} promedios de área-estudiante</div>
+  </div>
+  <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between">
+    <div class="absolute top-0 right-0 left-0 h-1 bg-error"></div>
+    <div class="flex items-start justify-between">
+      <div>
+        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider block">Estudiantes en Alerta</span>
+        <div class="flex items-baseline gap-2 mt-1">
+          <span class="font-headline-xl text-headline-xl text-error font-bold">{{ d.n_alertas }}</span>
+          <span class="font-label-sm text-label-sm px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-semibold">&lt; 70 (Literal D)</span>
+        </div>
+      </div>
+      <div class="w-11 h-11 rounded-lg bg-error-container text-on-error-container flex items-center justify-center"><span class="material-symbols-outlined text-[24px]">warning</span></div>
+    </div>
+    <div class="mt-4 pt-3 flex items-center justify-between">
+      <span class="font-body-sm text-body-sm text-on-surface-variant">Requiere refuerzo pedagógico</span>
+      {% if d.n_alertas %}<a class="inline-flex items-center gap-1 text-error font-semibold font-label-md text-label-md hover:underline" href="#atencion-prioritaria">Ver casos<span class="material-symbols-outlined text-[16px]">arrow_downward</span></a>{% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg mb-space-xl">
+  <div class="lg:col-span-8 bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-space-md mb-space-md">
+      <div>
+        <h2 class="font-headline-md text-headline-md text-primary tracking-tight">Promedio por Área Curricular</h2>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">Desempeño acumulado en base a los criterios de evaluación del MINERD</p>
+      </div>
+      <span class="font-label-sm text-label-sm text-on-surface-variant bg-surface-container px-2.5 py-1 rounded-md">{{ d.n_areas }} Áreas Académicas</span>
+    </div>
+    <div class="space-y-3">
+      {% for b in d.barras %}
+      <div class="space-y-1">
+        <div class="flex justify-between font-label-md text-label-md">
+          <span class="text-on-surface font-medium">{{ b.area }}</span>
+          <div class="flex items-center gap-2">
+            <span class="font-numeric-table text-numeric-table font-bold {{ 'text-error' if b.literal == 'D' else 'text-primary' }}">{{ b.promedio|nota }}</span>
+            {% if b.literal %}<span class="px-1.5 py-0.5 rounded font-label-sm text-label-sm {{ 'bg-error-container text-on-error-container' if b.literal == 'D' else 'bg-surface-container-low ' ~ chip_color[b.literal] }} font-bold">{{ b.literal }}</span>{% endif %}
+          </div>
+        </div>
+        <div class="w-full h-2.5 bg-surface-container rounded-full overflow-hidden" role="progressbar" aria-valuenow="{{ b.promedio or 0 }}" aria-valuemin="0" aria-valuemax="100">
+          <div class="h-full {{ barra_color[b.literal] if b.literal else 'bg-outline' }} rounded-full transition-all duration-500" style="width: {{ b.promedio or 0 }}%;"></div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="mt-space-md pt-3 flex flex-wrap items-center justify-between gap-2 text-on-surface-variant font-label-sm text-label-sm">
+      <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-secondary"></span> 90-100 (Excelente)</span>
+      <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-primary-container"></span> 80-89 (Muy Bueno)</span>
+      <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-surface-tint"></span> 70-79 (Bueno)</span>
+      <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-error"></span> Menos de 70 (En riesgo)</span>
+    </div>
+  </div>
+
+  <div class="lg:col-span-4 flex flex-col gap-space-lg">
+    <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col justify-between flex-1">
+      <div class="flex items-center justify-between mb-space-sm">
+        <h3 class="font-headline-sm text-headline-sm text-primary">Distribución Literales MINERD</h3>
+        <span class="material-symbols-outlined text-on-surface-variant text-[20px]">pie_chart</span>
+      </div>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mb-space-md">Promedio general de cada estudiante en el período</p>
+      <div class="flex items-center justify-center my-2">
+        <div class="relative w-36 h-36 flex items-center justify-center">
+          <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100" role="img" aria-label="Distribución de literales">
+            <circle cx="50" cy="50" fill="none" r="38" stroke="#edeef0" stroke-width="12"></circle>
+            {% for s in d.segmentos %}{% if not s.dasharray.startswith('0.00 ') %}
+            <circle cx="50" cy="50" fill="none" r="38" stroke="{{ s.color }}" stroke-width="12" stroke-dasharray="{{ s.dasharray }}" stroke-dashoffset="{{ s.dashoffset }}"></circle>
+            {% endif %}{% endfor %}
+          </svg>
+          <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+            <span class="font-headline-md text-headline-md font-bold text-primary">{{ d.evaluados }}</span>
+            <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Evaluados</span>
+          </div>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mt-2 pt-space-xs">
+        {% set rangos = {'A': '90-100', 'B': '80-89', 'C': '70-79', 'D': '&lt; 70'} %}
+        {% for x in d.distribucion %}
+        <div class="p-2 rounded-lg {{ 'bg-error-container/50' if x.literal == 'D' else 'bg-surface-container-low' }} flex flex-col">
+          <div class="flex items-center justify-between">
+            <span class="font-label-sm text-label-sm font-bold {{ 'text-error' if x.literal == 'D' else chip_color[x.literal] }}">Literal {{ x.literal }}</span>
+            <span class="font-label-sm text-label-sm text-on-surface-variant">{{ rangos[x.literal]|safe }}</span>
+          </div>
+          <div class="flex items-baseline justify-between mt-1">
+            <span class="font-headline-sm text-headline-sm font-bold text-on-surface">{{ x.pct }}%</span>
+            <span class="font-body-sm text-body-sm text-on-surface-variant">{{ x.cantidad }} est.</span>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+      <h3 class="font-headline-sm text-headline-sm text-primary mb-1">Evolución del Año Lectivo</h3>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mb-3">Historial por período lectivo</p>
+      <div class="space-y-3">
+        {% for e in d.evolucion %}
+        <div class="flex items-center justify-between {{ '' if e.real else 'opacity-75' }}">
+          <div class="flex items-center gap-2">
+            <span class="w-7 h-7 rounded-full {{ 'bg-primary-container text-on-primary' if e.actual else 'bg-surface-container text-on-surface-variant' }} flex items-center justify-center font-label-sm text-label-sm font-bold">P{{ e.numero }}</span>
+            <div>
+              <span class="font-label-md text-label-md {{ 'font-semibold' if e.actual }} text-on-surface block leading-none">{{ e.nombre.split(' (')[0] }}</span>
+              <span class="font-label-sm text-label-sm {{ 'text-secondary font-medium' if e.real else 'text-on-surface-variant' }}">{{ e.etiqueta }}</span>
+            </div>
+          </div>
+          <div class="text-right">
+            <span class="font-headline-sm text-headline-sm font-bold {{ 'text-primary' if e.real else 'text-on-surface-variant' }}">{{ e.valor|nota if e.valor is not none else '—' }}</span>
+            {% if e.sub %}<span class="font-label-sm text-label-sm text-on-surface-variant block">{{ e.sub }}</span>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden mb-space-xl" id="atencion-prioritaria">
+  <div class="p-space-lg flex flex-col md:flex-row md:items-center justify-between gap-space-md bg-surface-container-low">
+    <div>
+      <div class="flex items-center gap-2">
+        {% if d.n_alertas %}<span class="w-2.5 h-2.5 rounded-full bg-error animate-pulse"></span>{% endif %}
+        <h2 class="font-headline-md text-headline-md text-primary tracking-tight">Estudiantes que requieren atención pedagógica prioritaria</h2>
+      </div>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Estudiantes con promedio menor a 70 puntos (Literal D) en alguna área</p>
+    </div>
+    <span class="font-label-sm text-label-sm {{ 'text-error bg-error-container' if d.n_alertas else 'text-on-surface-variant bg-surface-container' }} px-3 py-1 rounded-full font-bold">{{ d.n_alertas }} caso{{ '' if d.n_alertas == 1 else 's' }}</span>
+  </div>
+  {% if d.alertas %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="bg-surface-container text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+          <th class="px-space-lg py-space-sm">Estudiante</th>
+          <th class="px-space-md py-space-sm">Matrícula</th>
+          <th class="px-space-md py-space-sm">Sección</th>
+          <th class="px-space-md py-space-sm">Área con Dificultad</th>
+          <th class="px-space-md py-space-sm text-center">Promedio Actual</th>
+          <th class="px-space-md py-space-sm text-center">Acompañamiento</th>
+          <th class="px-space-lg py-space-sm text-right">Acción</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-surface-container font-body-sm text-body-sm">
+        {% for a in d.alertas %}
+        <tr class="hover:bg-surface-container-low transition-colors">
+          <td class="px-space-lg py-space-md">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full {{ 'bg-primary-container text-on-primary' if loop.index is odd else 'bg-secondary-container text-on-secondary-container' }} font-bold flex items-center justify-center font-label-sm text-label-sm">{{ a.iniciales }}</div>
+              <div><span class="font-label-md text-label-md font-bold text-on-surface block">{{ a.nombre }}</span><span class="font-label-sm text-label-sm text-on-surface-variant">{{ a.nivel }}</span></div>
+            </div>
+          </td>
+          <td class="px-space-md py-space-md font-numeric-table text-numeric-table text-on-surface-variant font-medium">{{ a.matricula }}</td>
+          <td class="px-space-md py-space-md"><span class="px-2 py-0.5 rounded font-label-sm text-label-sm bg-surface-container text-primary font-semibold">{{ a.seccion }}</span></td>
+          <td class="px-space-md py-space-md"><span class="inline-flex items-center gap-1.5 font-medium text-on-surface"><span class="material-symbols-outlined text-[16px] text-error">{{ a.area_icono }}</span>{{ a.area }}</span></td>
+          <td class="px-space-md py-space-md text-center"><div class="inline-flex flex-col items-center"><span class="font-numeric-table text-numeric-table font-bold text-error">{{ a.promedio|nota }}</span><span class="px-2 py-0.5 rounded-full bg-error-container text-on-error-container font-label-sm text-label-sm font-bold">Literal {{ a.literal }}</span></div></td>
+          <td class="px-space-md py-space-md text-center">
+            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full {{ 'bg-error-container text-on-error-container' if not a.acompanamiento or a.acompanamiento == 'En riesgo académico' else 'bg-surface-container text-on-surface-variant' }} font-label-sm text-label-sm font-semibold"><span class="w-1.5 h-1.5 rounded-full {{ 'bg-error' if not a.acompanamiento or a.acompanamiento == 'En riesgo académico' else 'bg-outline' }}"></span>{{ a.acompanamiento or 'En riesgo académico' }}</span>
+          </td>
+          <td class="px-space-lg py-space-md text-right"><a href="{{ url_for('pages.perfil', insc_id=a.insc_id) }}" class="inline-block px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface font-label-md text-label-md transition-colors">Ver Ficha</a></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="p-space-lg font-body-md text-body-md text-on-surface-variant">Ningún estudiante tiene promedios por debajo de 70 en este período.</p>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
