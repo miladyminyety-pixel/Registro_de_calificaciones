@@ -1,9 +1,11 @@
-from flask import Blueprint, redirect, render_template, request, session, url_for
+import json
 
-from .. import actions, builders, grading
+from flask import Blueprint, Response, redirect, render_template, request, session, url_for
+
+from .. import actions, builders, grading, importer
 from ..data import Datos, cargas_docente, resolver_contexto, secciones_docente
 from ..db import get_db
-from ..errors import not_found
+from ..errors import ApiError, invalid, not_found
 from ..security import current_user, login_required, safe_next
 
 bp = Blueprint("pages", __name__)
@@ -163,3 +165,106 @@ def reportes():
 @login_required
 def acerca():
     return render_template("acerca.html", nav="acerca-de-la-aplicacion")
+
+
+# --------------------------------------------------------------------- importación
+def _parametros_importacion(db, form) -> dict:
+    nombre = (form.get("centro") or "").strip()
+    if not nombre:
+        raise invalid("Escribe el nombre del centro educativo", "centro")
+    if len(nombre) > 150:
+        raise invalid("El nombre del centro es demasiado largo", "centro")
+    nivel = form.get("nivel")
+    if nivel not in importer.NIVELES:
+        raise invalid("Selecciona el nivel", "nivel")
+    validas = {a["id"] for a in db.query("SELECT id FROM areas")}
+    area_ids = []
+    for v in form.getlist("areas"):
+        n = _int(v)
+        if n not in validas:
+            raise invalid("Área no válida", "areas")
+        if n not in area_ids:
+            area_ids.append(n)
+    return {
+        "centro": {"nombre": nombre, "regional": (form.get("regional") or "").strip()[:60] or None,
+                   "distrito": (form.get("distrito") or "").strip()[:60] or None},
+        "nivel": nivel, "area_ids": area_ids, "ser_tutor": form.get("tutor") == "1",
+    }
+
+
+def _filas_confirmadas(texto: str) -> list[dict]:
+    """Recompone las filas enviadas por el formulario de confirmación (se vuelven a validar)."""
+    try:
+        crudas = json.loads(texto or "")
+    except ValueError:
+        raise invalid("Los datos de la vista previa no son válidos; sube el archivo de nuevo")
+    if not isinstance(crudas, list) or len(crudas) > importer.MAX_FILAS:
+        raise invalid("Los datos de la vista previa no son válidos; sube el archivo de nuevo")
+    filas = []
+    for r in crudas:
+        if not isinstance(r, dict) or not isinstance(r.get("_fila"), int):
+            raise invalid("Los datos de la vista previa no son válidos; sube el archivo de nuevo")
+        fila = {c: str(r.get(c) or "")[:200] for c in importer.COLUMNAS}
+        fila["_fila"] = r["_fila"]
+        filas.append(fila)
+    return filas
+
+
+@bp.get("/importar/plantilla.<formato>")
+@login_required
+def importar_plantilla(formato: str):
+    if formato == "xlsx":
+        return Response(importer.plantilla_xlsx(), mimetype=
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        headers={"Content-Disposition": "attachment; filename=plantilla_estudiantes.xlsx"})
+    if formato == "csv":
+        return Response(importer.plantilla_csv(), mimetype="text/csv; charset=utf-8",
+                        headers={"Content-Disposition": "attachment; filename=plantilla_estudiantes.csv"})
+    raise not_found()
+
+
+@bp.route("/importar", methods=["GET", "POST"])
+@login_required
+def importar():
+    user, ctx = current_user(), _ctx()
+    db = get_db()
+    if not ctx["anio"]:
+        raise not_found("No hay un año lectivo configurado")
+    areas = db.query("SELECT id, nombre FROM areas ORDER BY orden")
+    previo = db.one(
+        "SELECT c.nombre, c.regional, c.distrito FROM cargas g JOIN secciones s ON s.id = g.seccion_id "
+        "JOIN centros c ON c.id = s.centro_id WHERE g.docente_id = ? ORDER BY g.id DESC LIMIT 1", (user["id"],))
+    form = request.form if request.method == "POST" else {}
+    estado = {"areas": areas, "error": None, "campo": None, "preview": None, "resultado": None,
+              "centro": previo or {}, "form": form, "nivel_def": user["nivel"] if user["nivel"] in importer.NIVELES else "Secundaria"}
+    if request.method == "GET":
+        return render_template("importar.html", e=estado, nav="importar")
+
+    accion = request.form.get("accion")
+    try:
+        params = _parametros_importacion(db, request.form)
+        centro_fila = db.one("SELECT id FROM centros WHERE LOWER(nombre) = LOWER(?)", (params["centro"]["nombre"],))
+        centro_id = centro_fila["id"] if centro_fila else None
+        if accion == "previsualizar":
+            archivo = request.files.get("archivo")
+            if archivo is None or not archivo.filename:
+                raise invalid("Selecciona un archivo .csv o .xlsx", "archivo")
+            filas = importer.leer_archivo(archivo.filename, archivo.read(importer.MAX_BYTES + 1))
+            resultado = importer.validar(db, filas, ctx["anio"]["id"], centro_id, params["nivel"])
+            estado["preview"] = {**resultado, "datos": json.dumps(filas, ensure_ascii=False),
+                                 "archivo": archivo.filename, "muestra": resultado["validas"][:50]}
+        elif accion == "confirmar":
+            filas = _filas_confirmadas(request.form.get("datos"))
+            resultado = importer.validar(db, filas, ctx["anio"]["id"], centro_id, params["nivel"])
+            if resultado["errores"] and request.form.get("omitir_errores") != "1":
+                raise invalid("El archivo tiene filas con errores. Corrígelo o marca «omitir filas con error».")
+            estado["resultado"] = importer.aplicar(
+                db, user, ctx["anio"]["id"], params["centro"], params["nivel"], params["area_ids"],
+                resultado["validas"], params["ser_tutor"])
+            estado["resultado"]["omitidas"] = resultado["resumen"]["con_errores"]
+        else:
+            raise invalid("Acción no válida")
+    except ApiError as exc:
+        estado["error"], estado["campo"] = exc.message, exc.field
+        return render_template("importar.html", e=estado, nav="importar"), exc.status
+    return render_template("importar.html", e=estado, nav="importar")

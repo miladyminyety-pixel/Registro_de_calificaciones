@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Importar estudiantes{% endblock %}
+{% set f = e.form %}
+{% set marcadas = f.getlist('areas') if f.getlist is defined else [] %}
+{% block content %}
+<div class="mb-space-lg">
+  <h1 class="font-headline-xl text-headline-xl text-primary tracking-tight">Importar estudiantes</h1>
+  <p class="font-body-lg text-body-lg text-on-surface-variant mt-1">Carga tus secciones y estudiantes desde un archivo Excel o CSV. Verás una vista previa antes de guardar.</p>
+</div>
+
+{% if e.error %}
+<div role="alert" class="mb-space-md flex items-start gap-2 rounded-xl bg-error-container text-on-error-container px-space-md py-space-sm font-label-md text-label-md">
+  <span class="material-symbols-outlined text-[18px]">error</span><span>{{ e.error }}</span>
+</div>
+{% endif %}
+
+{% if e.resultado %}
+{% set r = e.resultado %}
+<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-xl max-w-3xl">
+  <div class="flex items-center gap-3 mb-space-md"><span class="material-symbols-outlined text-[36px] text-secondary">check_circle</span>
+    <h2 class="font-headline-lg text-headline-lg text-primary">Importación completada</h2></div>
+  <dl class="grid grid-cols-2 md:grid-cols-4 gap-space-md text-center">
+    <div class="rounded-xl bg-surface-container-low p-space-md"><dd class="font-headline-xl text-headline-xl font-bold text-primary">{{ r.estudiantes_nuevos }}</dd><dt class="font-label-sm text-label-sm text-on-surface-variant">Estudiantes nuevos</dt></div>
+    <div class="rounded-xl bg-surface-container-low p-space-md"><dd class="font-headline-xl text-headline-xl font-bold text-primary">{{ r.inscripciones }}</dd><dt class="font-label-sm text-label-sm text-on-surface-variant">Inscripciones</dt></div>
+    <div class="rounded-xl bg-surface-container-low p-space-md"><dd class="font-headline-xl text-headline-xl font-bold text-primary">{{ r.secciones_nuevas }}</dd><dt class="font-label-sm text-label-sm text-on-surface-variant">Secciones nuevas</dt></div>
+    <div class="rounded-xl bg-surface-container-low p-space-md"><dd class="font-headline-xl text-headline-xl font-bold text-primary">{{ r.cargas_nuevas }}</dd><dt class="font-label-sm text-label-sm text-on-surface-variant">Áreas asignadas</dt></div>
+  </dl>
+  <p class="mt-space-md font-body-md text-body-md text-on-surface-variant">Secciones: <strong class="text-on-surface">{{ r.secciones|join(', ') }}</strong>{% if r.omitidas %} · {{ r.omitidas }} fila(s) con error omitida(s){% endif %}.</p>
+  {% if r.cargas_omitidas %}
+  <div class="mt-space-sm rounded-lg bg-surface-container-low px-3 py-2 font-label-md text-label-md text-on-surface-variant"><strong>No se asignaron:</strong>
+    <ul class="list-disc pl-5">{% for c in r.cargas_omitidas %}<li>{{ c }}</li>{% endfor %}</ul></div>
+  {% endif %}
+  {% if not r.cargas_nuevas %}<p class="mt-space-sm font-label-md text-label-md text-on-surface-variant">No asignaste áreas, así que aún no verás notas por registrar. Vuelve a importar el mismo archivo marcando las áreas que impartes: los estudiantes ya inscritos no se duplican.</p>{% endif %}
+  <div class="flex flex-wrap gap-2 mt-space-lg">
+    <a href="{{ url_for('pages.mis_secciones') }}" class="rounded-lg bg-primary-container text-on-primary font-label-md text-label-md px-4 py-2 hover:bg-primary transition-colors">Ver mis secciones</a>
+    <a href="{{ url_for('pages.importar') }}" class="rounded-lg bg-surface-container-high text-on-surface font-label-md text-label-md px-4 py-2 hover:bg-surface-container transition-colors">Importar otro archivo</a>
+  </div>
+</section>
+
+{% elif e.preview %}
+{% set p = e.preview %}
+<section class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden mb-space-lg">
+  <div class="p-space-lg bg-surface-container-low">
+    <h2 class="font-headline-md text-headline-md text-primary">Vista previa · {{ p.archivo }}</h2>
+    <p class="font-body-sm text-body-sm text-on-surface-variant">Todavía no se ha guardado nada.</p>
+  </div>
+  <dl class="grid grid-cols-2 md:grid-cols-5 gap-space-md p-space-lg text-center">
+    <div><dd class="font-headline-lg text-headline-lg font-bold text-primary">{{ p.resumen.total }}</dd><dt class="font-label-sm text-label-sm text-on-surface-variant">Filas leídas</dt></div>
+    <div><dd class="font-headline-lg text-headline-lg font-bold text-primary">{{ p.resumen.nuevos }}</dd><dt class="font-label-sm text-label-sm text-on-surface-variant">Estudiantes nuevos</dt></div>
+    <div><dd class="font-headline-lg text-headline-lg font-bold text-primary">{{ p.resumen.existentes }}</dd><dt class="font-label-sm text-label-sm text-on-surface-variant">Ya existían (se inscriben)</dt></div>
+    <div><dd class="font-headline-lg text-headline-lg font-bold text-on-surface-variant">{{ p.resumen.ya_inscritos }}</dd><dt class="font-label-sm text-label-sm text-on-surface-variant">Ya inscritos (sin cambios)</dt></div>
+    <div><dd class="font-headline-lg text-headline-lg font-bold {{ 'text-error' if p.resumen.con_errores else 'text-primary' }}">{{ p.resumen.con_errores }}</dd><dt class="font-label-sm text-label-sm text-on-surface-variant">Filas con error</dt></div>
+  </dl>
+  <p class="px-space-lg pb-space-md font-body-md text-body-md text-on-surface-variant">Secciones: <strong class="text-on-surface">{{ p.secciones|join(', ') or '—' }}</strong></p>
+</section>
+
+{% if p.errores %}
+<section class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden mb-space-lg">
+  <div class="p-space-md bg-error-container text-on-error-container font-headline-sm text-headline-sm">Errores ({{ p.errores|length }})</div>
+  <ul class="divide-y divide-surface-container max-h-72 overflow-y-auto font-body-sm text-body-sm">
+    {% for x in p.errores[:100] %}<li class="px-space-md py-2"><strong>Fila {{ x.fila }}</strong> · {{ x.campo }}: {{ x.mensaje }}</li>{% endfor %}
+    {% if p.errores|length > 100 %}<li class="px-space-md py-2 text-on-surface-variant">… y {{ p.errores|length - 100 }} más.</li>{% endif %}
+  </ul>
+</section>
+{% endif %}
+{% if p.advertencias %}
+<section class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden mb-space-lg">
+  <div class="p-space-md bg-surface-container-low font-headline-sm text-headline-sm text-primary">Avisos ({{ p.advertencias|length }})</div>
+  <ul class="divide-y divide-surface-container max-h-48 overflow-y-auto font-body-sm text-body-sm">
+    {% for x in p.advertencias[:50] %}<li class="px-space-md py-2"><strong>Fila {{ x.fila }}</strong> · {{ x.mensaje }}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if p.muestra %}
+<section class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden mb-space-lg">
+  <div class="p-space-md bg-surface-container-low font-headline-sm text-headline-sm text-primary">Primeros {{ p.muestra|length }} estudiantes válidos</div>
+  <div class="overflow-x-auto max-h-96"><table class="w-full text-left font-body-sm text-body-sm">
+    <thead><tr class="bg-surface-container text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider"><th class="px-space-md py-2">Fila</th><th class="px-space-md py-2">Matrícula</th><th class="px-space-md py-2">Estudiante</th><th class="px-space-md py-2">Sección</th><th class="px-space-md py-2">Situación</th></tr></thead>
+    <tbody class="divide-y divide-surface-container">
+      {% for v in p.muestra %}<tr><td class="px-space-md py-2">{{ v._fila }}</td><td class="px-space-md py-2 font-numeric-table">{{ v.matricula }}</td><td class="px-space-md py-2">{{ v.nombres }} {{ v.apellidos }}</td><td class="px-space-md py-2">{{ v.grado }} {{ v.seccion }}</td>
+        <td class="px-space-md py-2 text-on-surface-variant">{{ {'nuevo': 'Nuevo', 'existente': 'Existente → se inscribe', 'ya_inscrito': 'Ya inscrito'}[v.estado] }}</td></tr>{% endfor %}
+    </tbody></table></div>
+</section>
+{% endif %}
+
+<form method="post" class="flex flex-wrap items-center gap-space-md">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+  <input type="hidden" name="accion" value="confirmar"/>
+  <input type="hidden" name="datos" value="{{ p.datos }}"/>
+  <input type="hidden" name="centro" value="{{ f.get('centro', '') }}"/><input type="hidden" name="regional" value="{{ f.get('regional', '') }}"/><input type="hidden" name="distrito" value="{{ f.get('distrito', '') }}"/>
+  <input type="hidden" name="nivel" value="{{ f.get('nivel', '') }}"/>{% if f.get('tutor') == '1' %}<input type="hidden" name="tutor" value="1"/>{% endif %}
+  {% for a in marcadas %}<input type="hidden" name="areas" value="{{ a }}"/>{% endfor %}
+  {% if p.errores %}<label class="flex items-center gap-2 font-label-md text-label-md"><input type="checkbox" name="omitir_errores" value="1" class="w-4 h-4 accent-[#3178b9]"/> Omitir las {{ p.resumen.con_errores }} fila(s) con error e importar el resto</label>{% endif %}
+  <button type="submit" {% if not p.validas %}disabled{% endif %} class="rounded-lg bg-primary-container text-on-primary font-label-md text-label-md px-5 py-2.5 hover:bg-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed">Confirmar e importar {{ p.validas|length }} estudiante(s)</button>
+  <a href="{{ url_for('pages.importar') }}" class="font-label-md text-label-md text-primary hover:underline">Cancelar y subir otro archivo</a>
+</form>
+
+{% else %}
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg">
+  <form method="post" enctype="multipart/form-data" class="lg:col-span-8 space-y-space-lg">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <input type="hidden" name="accion" value="previsualizar"/>
+    <section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg space-y-space-md">
+      <h2 class="font-headline-md text-headline-md text-primary">1. Centro educativo</h2>
+      <label class="block"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Nombre del centro</span>
+        <input name="centro" required maxlength="150" value="{{ f.get('centro') or e.centro.nombre or '' }}" class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2.5 font-body-md text-body-md outline-none focus:ring-2 {{ 'ring-2 ring-error' if e.campo == 'centro' else 'focus:ring-primary-container' }}"/></label>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+        <label class="block"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Regional</span><input name="regional" maxlength="60" value="{{ f.get('regional') or e.centro.regional or '' }}" placeholder="Ej.: Regional 15" class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2.5 font-body-md text-body-md outline-none focus:ring-2 focus:ring-primary-container"/></label>
+        <label class="block"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Distrito</span><input name="distrito" maxlength="60" value="{{ f.get('distrito') or e.centro.distrito or '' }}" placeholder="Ej.: Distrito 02" class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2.5 font-body-md text-body-md outline-none focus:ring-2 focus:ring-primary-container"/></label>
+        <label class="block"><span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Nivel</span>
+          <select name="nivel" class="mt-1 w-full rounded-lg bg-surface-container-low px-3 py-2.5 font-body-md text-body-md outline-none focus:ring-2 focus:ring-primary-container">
+            {% for n in ['Secundaria', 'Primaria'] %}<option {% if (f.get('nivel') or e.nivel_def) == n %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
+      </div>
+    </section>
+    <section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg space-y-space-sm">
+      <h2 class="font-headline-md text-headline-md text-primary">2. Áreas que impartes en estas secciones</h2>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">Se asignarán a todas las secciones del archivo. Puedes dejarlas vacías y asignarlas después.</p>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+        {% for a in e.areas %}<label class="flex items-center gap-2 rounded-lg bg-surface-container-low px-3 py-2 cursor-pointer font-label-md text-label-md"><input type="checkbox" name="areas" value="{{ a.id }}" class="w-4 h-4 accent-[#3178b9]" {% if a.id|string in marcadas %}checked{% endif %}/>{{ a.nombre }}</label>{% endfor %}
+      </div>
+      <label class="flex items-center gap-2 pt-2 font-label-md text-label-md"><input type="checkbox" name="tutor" value="1" class="w-4 h-4 accent-[#3178b9]" {% if f.get('tutor') == '1' %}checked{% endif %}/> Soy tutor/a de estas secciones (podré ver todas sus áreas)</label>
+    </section>
+    <section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg space-y-space-sm">
+      <h2 class="font-headline-md text-headline-md text-primary">3. Archivo</h2>
+      <input type="file" name="archivo" required accept=".csv,.xlsx,.txt" class="block w-full font-body-md text-body-md file:mr-3 file:rounded-lg file:border-0 file:bg-primary-container file:text-on-primary file:px-4 file:py-2 file:font-label-md"/>
+      <p class="font-label-sm text-label-sm text-on-surface-variant">.xlsx o .csv · máximo 2 MB y {{ 2000 }} estudiantes.</p>
+    </section>
+    <button type="submit" class="rounded-lg bg-primary-container text-on-primary font-label-md text-label-md px-5 py-3 hover:bg-primary transition-colors">Ver vista previa</button>
+  </form>
+
+  <aside class="lg:col-span-4 space-y-space-lg">
+    <section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg">
+      <h2 class="font-headline-md text-headline-md text-primary mb-1">Formato del archivo</h2>
+      <p class="font-body-sm text-body-sm text-on-surface-variant mb-space-sm">La primera fila son los encabezados:</p>
+      <ul class="font-body-sm text-body-sm space-y-1">
+        <li><strong>matricula</strong> · obligatoria, única</li><li><strong>rne</strong> · opcional</li>
+        <li><strong>nombres</strong> y <strong>apellidos</strong> · obligatorios</li>
+        <li><strong>grado</strong> · 1 a 6 (5, 5to…)</li><li><strong>seccion</strong> · letra (A, B…)</li>
+        <li><strong>condicion</strong> · opcional (Regular por defecto)</li>
+      </ul>
+      <div class="flex flex-wrap gap-2 mt-space-md">
+        <a href="{{ url_for('pages.importar_plantilla', formato='xlsx') }}" class="inline-flex items-center gap-1 rounded-lg bg-surface-container-high px-3 py-2 font-label-md text-label-md hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[18px]">download</span> Plantilla Excel</a>
+        <a href="{{ url_for('pages.importar_plantilla', formato='csv') }}" class="inline-flex items-center gap-1 rounded-lg bg-surface-container-high px-3 py-2 font-label-md text-label-md hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[18px]">download</span> Plantilla CSV</a>
+      </div>
+    </section>
+    <section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg font-body-sm text-body-sm text-on-surface-variant space-y-1">
+      <h2 class="font-headline-sm text-headline-sm text-primary">Cómo se trata cada caso</h2>
+      <p>Las secciones que no existan se crean en el año lectivo {{ ctx.anio.nombre }}.</p>
+      <p>Un estudiante cuya matrícula ya existe no se duplica: se conserva su nombre y solo se inscribe en la sección.</p>
+      <p>Si ya está inscrito en otra sección este año, esa fila se marca como error.</p>
+    </section>
+  </aside>
+</div>
+{% endif %}
+{% endblock %}

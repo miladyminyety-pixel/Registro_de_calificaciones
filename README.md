@@ -11,9 +11,14 @@ Portal docente (MINERD · República Dominicana) para registrar evaluaciones y c
 | `/registro` | Matriz de calificaciones editable (cálculo en vivo y guardado) |
 | `/estudiantes`, `/estudiantes/<id>` | Búsqueda y ficha: histórico, diagnóstico y bitácora de acompañamiento |
 | `/evaluaciones`, `/evaluaciones/nueva` | Instrumentos por área/sección y creación con control del 100 % |
+| `/importar` | Carga de secciones y estudiantes desde Excel/CSV con vista previa (plantillas descargables) |
 | `/mis-secciones`, `/configuracion`, `/acerca` | Secciones, cambio de contraseña, información |
 
 `/reportes` (boletines imprimibles) aún no está implementado.
+
+## Importar estudiantes
+
+En **Importar Estudiantes** descarga la plantilla (Excel o CSV), complétala (`matricula`, `rne`, `nombres`, `apellidos`, `grado`, `seccion`, `condicion`) y súbela. Verás una vista previa con errores y avisos antes de confirmar; nada se guarda hasta entonces. Las secciones inexistentes se crean, un estudiante con matrícula ya registrada no se duplica y todo se guarda en una sola transacción. Máximo 2 MB y 2000 filas por archivo.
 
 ## Reglas de calificación
 
@@ -29,7 +34,7 @@ python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 cp .env.example .env          # edita usuario y clave
 flask --app wsgi run --debug  # http://localhost:5000
-pytest                        # 64 pruebas
+pytest                        # 82 pruebas
 ```
 
 Sin `DATABASE_URL` usa SQLite en `instance/registro.db`. Con `SEED_DEMO_DATA=true` carga 40 estudiantes y notas de ejemplo (solo si la base está vacía).
